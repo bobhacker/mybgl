@@ -1,0 +1,89 @@
+<?php 
+/**
+ * @file bg_re_import_user.module
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function bg_re_import_user_menu() {
+  $items = array();
+  $items['bgl/re-import-user'] = array(
+    'title' => 'BGL re Import User',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bg_re_import_user_optin_form'),
+    'access arguments' => array('administrer bg re import user'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => -10,
+    'file' => 'bg_re_import_user.admin.inc',
+  );
+  $items['bgl/re-import-user/optin'] = array(
+    'title' => 'Finaliser votre inscription',
+    'page callback' => 'bg_re_import_user_optin_callback',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Menu callback.
+ */
+function bg_re_import_user_optin_callback() {
+  if (isset($_GET['email']) && isset($_GET['hash']) && ($_GET['hash'] == hash('sha256', $_GET['email']))) {
+    if ($account = user_load_by_mail($_GET['email'])) {
+      if ($account->status == 0) {
+        module_load_include('inc', 'user', 'user.pages');
+        return render(drupal_get_form('user_profile_form', $account));
+      }
+    }
+  }
+  drupal_set_message(format_string('URL erronée ou compte déjà actif. Visitez !site_web pour tenter de vous connecter.', array('!site_web' => l('http://www.beaugrenelle-paris.com', 'http://www.beaugrenelle-paris.com'))), 'error');
+  drupal_goto('<front>');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function bg_re_import_user_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  if ('bgl/re-import-user/optin' == implode('/', arg())) {
+    foreach ($form['account'] as $key => &$field) {
+      if (($key != 'pass') && is_array($field)) {
+        $field['#access'] = FALSE;
+      }
+    }
+    $form['#validate'][] = 'bg_re_import_user_profile_form_validate';
+    $form['#submit'][] = 'bg_re_import_user_profile_form_submit';
+  }
+}
+
+function bg_re_import_user_profile_form_validate($form, &$form_state) {
+  $form_state['values']['status'] = 1;
+}
+
+function bg_re_import_user_profile_form_submit($form, &$form_state) {
+  drupal_set_message(format_string('Félicitations ! Votre compte a été activé. Visitez !site_web pour vous connecter.', array('!site_web' => l('http://www.beaugrenelle-paris.com', 'http://www.beaugrenelle-paris.com'))));
+  $form_state['redirect'] = '<front>';
+}
+
+/**
+ * Implements hook_mail().
+ */
+function bg_re_import_user_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'optin':
+      $landing_page = $params['landing_page'];
+      $message['subject'] = 'Beaugrenelle - BeBritish';
+      $output = 'Beaugrenelle vous souhaite le bonjour !' . PHP_EOL;
+      $output .= PHP_EOL;
+      $output .= 'Cliquez sur ce lien pour finaliser votre inscription :' . PHP_EOL;
+      $output .= $landing_page . PHP_EOL;
+      $output .= PHP_EOL;
+      $output .= 'Amicalement,' . PHP_EOL;
+      $output .= 'L\'équipe Beaugrenelle.';
+      $message['body'][] = $output;
+      break;
+    default:
+      break;
+  }
+}
