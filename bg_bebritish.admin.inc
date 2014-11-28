@@ -1,17 +1,17 @@
 <?php
 /**
- * @file bg_re_import_user.admin.inc
+ * @file bg_bebritish.admin.inc
  */
 
 /**
  * Opt-in form.
  */
-function bg_re_import_user_optin_form($form, $form_state) {
+function bg_bebritish_optin_form($form, $form_state) {
   $form = array();
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => 'E-mailing',
-    '#submit' => array('bg_re_import_user_optin_form_submit'),
+    '#submit' => array('bg_bebritish_optin_form_submit'),
   );
   return $form;
 }
@@ -19,18 +19,18 @@ function bg_re_import_user_optin_form($form, $form_state) {
 /**
  * Submit callback.
  */
-function bg_re_import_user_optin_form_submit($form, &$form_state) {
+function bg_bebritish_optin_form_submit($form, &$form_state) {
   $query = db_select('users', 'u')
     ->fields('u', array('mail'))
     ->condition('u.uid', 1, '>');
   $emails = $query->execute()->fetchCol();
   foreach ($emails as $email) {
-    $module = 'bg_re_import_user';
+    $module = 'bg_bebritish';
     $key = 'optin';
     $to = $email;
     $language = language_default();
     $params = array(
-      'landing_page' => url('bgl/re-import-user/optin', array('absolute' => TRUE, 'query' => array(
+      'landing_page' => url('bgl/bebritish/optin', array('absolute' => TRUE, 'query' => array(
         'email' => $email, 'hash' => hash('sha256', $email)
       )))
     );
