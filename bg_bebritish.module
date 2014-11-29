@@ -20,19 +20,29 @@ function bg_bebritish_permission() {
  */
 function bg_bebritish_menu() {
   $items = array();
-  $items['bgl/bebritish/import'] = array(
-    'title' => 'Import BeBritish',
+  $items['bgl/bebritish'] = array(
+    'title' => 'BeBritish',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bg_bebritish_import_form'),
     'access arguments' => array('administrer bg bebritish'),
+    'weight' => -15,
+    'file' => 'bg_bebritish.pages.inc',
+  );
+  $items['bgl/bebritish/import'] = array(
+    'title' => 'Import',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bg_bebritish_import_form'),
+    'access arguments' => array('administrer bg bebritish'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
     'file' => 'bg_bebritish.pages.inc',
   );
   $items['bgl/bebritish/emailing'] = array(
-    'title' => 'E-mailing BeBritish',
+    'title' => 'E-mailing',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bg_bebritish_emailing_form'),
     'access arguments' => array('administrer bg bebritish'),
+    'type' => MENU_LOCAL_TASK,
     'weight' => -5,
     'file' => 'bg_bebritish.pages.inc',
   );
