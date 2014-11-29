@@ -143,6 +143,7 @@ function bg_bebritish_emailing_form($form, $form_state) {
  * @see drupal_mail()
  */
 function bg_bebritish_emailing_form_submit($form, &$form_state) {
+  set_time_limit(0);
   $query = unserialize($form_state['values']['query']);
   $results = $query->execute();
   foreach ($results as $account) {
