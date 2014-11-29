@@ -25,7 +25,6 @@ function bg_bebritish_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bg_bebritish_import_form'),
     'access arguments' => array('administrer bg bebritish'),
-    'type' => MENU_NORMAL_ITEM,
     'weight' => -10,
     'file' => 'bg_bebritish.pages.inc',
   );
@@ -34,7 +33,6 @@ function bg_bebritish_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bg_bebritish_emailing_form'),
     'access arguments' => array('administrer bg bebritish'),
-    'type' => MENU_NORMAL_ITEM,
     'weight' => -5,
     'file' => 'bg_bebritish.pages.inc',
   );
