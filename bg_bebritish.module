@@ -4,6 +4,18 @@
  */
 
 /**
+ * Implements hook_permission().
+ */
+function bg_bebritish_permission() {
+  return array(
+    'administer bg bebritish' => array(
+      'title' => 'Administrer BGL BeBritish',
+      'description' => 'Effectuer les tâches d\'administration de BGL BeBritish.',
+    ),
+  );
+}
+
+/**
  * Implements hook_menu().
  */
 function bg_bebritish_menu() {
@@ -39,6 +51,7 @@ function bg_bebritish_menu() {
 
 /**
  * Implements hook_mail().
+ * @see bg_bebritish_emailing_form_submit()
  */
 function bg_bebritish_mail($key, &$message, $params) {
   switch ($key) {
@@ -67,15 +80,9 @@ function bg_bebritish_mail($key, &$message, $params) {
 function bg_bebritish_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   $user = $form_state['user'];
   if (isset($_GET['pass-reset-token']) && isset($_SESSION['pass_reset_' . $user->uid]) && ($_GET['pass-reset-token'] == $_SESSION['pass_reset_' . $user->uid])) {
+    // On est dans le cas BeBritish : mise à jour is_newsletter_bgl = 1 + fonction de soumission custom
+    db_update('bg_customers')->fields(array('is_newsletter_bgl' => 1))->condition('uid', $user->uid)->execute();
+    module_load_include('inc', 'bg_bebritish', 'bg_bebritish.pages');
     $form['#submit'][] = 'bg_bebritish_profile_form_submit';
   }
-}
-
-/**
- * Redirection vers le front Beaugrenelle après édition.
- * @TODO Landing page comptes activés BeBritish ?
- */
-function bg_bebritish_profile_form_submit($form, &$form_state) {
-  // Redirection vers Beaugrenelle
-  $form_state['redirect'] = 'http://www.beaugrenelle-paris.com/fr/landing-bbritish';
 }

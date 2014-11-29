@@ -1,4 +1,4 @@
 name = BGL BeBritish
-description = Inscription des joueurs BeBritish.
+description = Inscription et e-mailing des joueurs BeBritish.
 core = 7.x
 version = 7.x-1.0

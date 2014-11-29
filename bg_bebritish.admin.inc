@@ -5,6 +5,7 @@
 
 /**
  * Landing page des inscrits BeBritish. Vérification du lien + édition du mot de passe.
+ * @see bg_bebritish_menu()
  * @see user_pass_reset()
  */
 function bg_bebritish_password_form($form, &$form_state, $uid, $timestamp, $hashed_pass, $action = NULL) {

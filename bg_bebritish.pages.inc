@@ -5,6 +5,7 @@
 
 /**
  * Formulaire d'importation de la table {mkt_bbritish_users}.
+ * @see bg_bebritish_menu()
  */
 function bg_bebritish_import_form($form, &$form_state) {
   $form = array();
@@ -22,6 +23,7 @@ function bg_bebritish_import_form($form, &$form_state) {
 
 /**
  * Importation de la table {mkt_bbritish_users}.
+ * @see bg_bebritish_import_form()
  */
 function bg_bebritish_import_form_submit() {
   set_time_limit(0);
@@ -80,6 +82,7 @@ function bg_bebritish_import_form_submit() {
 
 /**
  * Formulaire d'e-mailing opt-in pour les membres BeBritish.
+ * @see bg_bebritish_menu()
  */
 function bg_bebritish_emailing_form($form, $form_state) {
   $form = array();
@@ -93,8 +96,10 @@ function bg_bebritish_emailing_form($form, $form_state) {
   $query->join('users', 'u', 'u.uid = c.uid');
   
   $results = $query->execute();
+  $nb_membres = $results->rowCount();
   $serialized_query = serialize($query);
   
+  // Ajout de la pagination et de l'ordonnancement (affichage uniquement)
   $query->orderBy('u.mail');
   $query = $query->extend('PagerDefault')->limit(10);
   $results_pager = $query->execute();
@@ -103,14 +108,14 @@ function bg_bebritish_emailing_form($form, $form_state) {
   $page = isset($_GET['page']) ? (int) $_GET['page'] : 0;
   $cpt = 1;
   foreach ($results_pager as $row) {
-    $compteur = ($cpt + $page * 10) <= $results->rowCount() ? $cpt + $page * 10 : $cpt;
+    $compteur = ($cpt + $page * 10) <= $nb_membres ? $cpt + $page * 10 : $cpt;
     $rows[] = array($compteur, $row->mail, $row->first_name, $row->last_name, $row->name);
     $cpt++;
   }
   // @see theme_table()
   $form['destinataires'] = array(
     '#type' => 'item',
-    '#title' => "Liste d'envoi ({$results->rowCount()})",
+    '#title' => format_string('Liste d\'envoi (!nb_membres)', array('!nb_membres' => format_plural($nb_membres, '@count membre', '@count membres'))),
     '#theme' => 'table',
     '#header' => array('#', 'E-mail', 'Prénom', 'Nom', 'Nom d\'utilisateur'),
     '#rows' => $rows,
@@ -133,6 +138,7 @@ function bg_bebritish_emailing_form($form, $form_state) {
 
 /**
  * E-mailing opt-in pour les membres BeBritish.
+ * @see bg_bebritish_emailing_form()
  * @see user_pass_reset_url()
  * @see drupal_mail()
  */
@@ -154,12 +160,24 @@ function bg_bebritish_emailing_form_submit($form, &$form_state) {
     $from = NULL;
     $send = TRUE;
     /** Simulation d'envoi de l'email - Réactiver si nécessaire **/
-    //$message = drupal_mail($module, $key, $to, $language, $params, $from, $send);
-    //if (isset($message['result']) && $message['result']) {
-    //  drupal_set_message(format_string("E-mail '%sujet' envoyé avec succès à l'utilisateur %utilisateur.", array(
-    //    '%sujet' => $message['subject'],
-    //    '%utilisateur' => $account->name,
-    //  )));
-    //}
+    /*--
+    $message = drupal_mail($module, $key, $to, $language, $params, $from, $send);
+    if (isset($message['result']) && $message['result']) {
+      drupal_set_message(format_string("E-mail '%sujet' envoyé avec succès à l'utilisateur %utilisateur.", array(
+        '%sujet' => $message['subject'],
+        '%utilisateur' => $account->name,
+      )));
+    }
+    /**/
   }
+}
+
+/**
+ * Redirection vers le front Beaugrenelle après soumission du formulaire d'édition.
+ * @see bg_bebritish_form_user_profile_form_alter()
+ * @TODO Page de confirmation BeBritish côté front ?
+ */
+function bg_bebritish_profile_form_submit($form, &$form_state) {
+  // Redirection vers Beaugrenelle
+  $form_state['redirect'] = 'http://www.beaugrenelle-paris.com/fr/landing-bbritish';
 }
