@@ -28,7 +28,7 @@ function bg_bebritish_import_form_submit() {
   $transaction = db_transaction();
   try {
     $query = db_select('mkt_bbritish_users', 'm')
-      ->fields('m', array('email', 'nom', 'prenom', 'cp', 'telephone'));
+      ->fields('m', array('email', 'prenom', 'nom', 'cp', 'telephone'));
     $results = $query->execute();
     foreach ($results as $row) {
       $account = user_load_by_mail($row->email);
@@ -53,8 +53,8 @@ function bg_bebritish_import_form_submit() {
         if (user_save(NULL, $edit)) {
           db_update('bg_customers')
             ->fields(array(
-              'first_name' => $row->nom,
-              'last_name' => $row->prenom,
+              'first_name' => $row->prenom,
+              'last_name' => $row->nom,
               'zip_code' => $row->cp,
               'phone_number' => $row->telephone,
               'media_subscribe' => 'BeBritish-borne',
@@ -92,23 +92,25 @@ function bg_bebritish_emailing_form($form, $form_state) {
     ->condition('c.media_subscribe', 'bebritish-%', 'LIKE');
   $query->join('users', 'u', 'u.uid = c.uid');
   
-  $s_query = serialize($query);
-  $s_results = $query->execute();
-  
-  $query = $query->extend('PagerDefault')->limit(10);
   $results = $query->execute();
+  $serialized_query = serialize($query);
+  
+  $query->orderBy('u.mail');
+  $query = $query->extend('PagerDefault')->limit(10);
+  $results_pager = $query->execute();
   
   $rows = array();
   $page = isset($_GET['page']) ? (int) $_GET['page'] : 0;
   $cpt = 1;
-  foreach ($results as $row) {
-    $compteur = ($cpt + $page * 10) <= $s_results->rowCount() ? $cpt + $page * 10 : $cpt;
+  foreach ($results_pager as $row) {
+    $compteur = ($cpt + $page * 10) <= $results->rowCount() ? $cpt + $page * 10 : $cpt;
     $rows[] = array($compteur, $row->mail, $row->first_name, $row->last_name, $row->name);
     $cpt++;
   }
+  // @see theme_table()
   $form['destinataires'] = array(
     '#type' => 'item',
-    '#title' => "Liste d'envoi ({$s_results->rowCount()})",
+    '#title' => "Liste d'envoi ({$results->rowCount()})",
     '#theme' => 'table',
     '#header' => array('#', 'E-mail', 'Prénom', 'Nom', 'Nom d\'utilisateur'),
     '#rows' => $rows,
@@ -117,7 +119,7 @@ function bg_bebritish_emailing_form($form, $form_state) {
   
   $form['query'] = array(
     '#type' => 'hidden',
-    '#value' => $s_query,
+    '#value' => $serialized_query,
   );
   
   $form['submit'] = array(
