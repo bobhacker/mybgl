@@ -20,31 +20,27 @@ function bg_bebritish_permission() {
  */
 function bg_bebritish_menu() {
   $items = array();
-  $items['bgl/bebritish'] = array(
+  $items['admin/bgl/bebritish'] = array(
     'title' => 'BeBritish',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bg_bebritish_import_form'),
     'access arguments' => array('administrer bg bebritish'),
     'weight' => -15,
-    'file' => 'bg_bebritish.pages.inc',
+    'file' => 'bg_bebritish.admin.inc',
   );
-  $items['bgl/bebritish/import'] = array(
+  $items['admin/bgl/bebritish/import'] = array(
     'title' => 'Import',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('bg_bebritish_import_form'),
-    'access arguments' => array('administrer bg bebritish'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
-    'file' => 'bg_bebritish.pages.inc',
   );
-  $items['bgl/bebritish/emailing'] = array(
+  $items['admin/bgl/bebritish/emailing'] = array(
     'title' => 'E-mailing',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bg_bebritish_emailing_form'),
     'access arguments' => array('administrer bg bebritish'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
-    'file' => 'bg_bebritish.pages.inc',
+    'file' => 'bg_bebritish.admin.inc',
   );
   $items['bgl/bebritish/optin/%/%/%'] = array(
     'title' => 'Finaliser votre inscription',
@@ -52,7 +48,7 @@ function bg_bebritish_menu() {
     'page arguments' => array('bg_bebritish_password_form', 3, 4, 5),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
-    'file' => 'bg_bebritish.admin.inc',
+    'file' => 'bg_bebritish.pages.inc',
   );
   return $items;
 }
@@ -94,4 +90,14 @@ function bg_bebritish_form_user_profile_form_alter(&$form, &$form_state, $form_i
     module_load_include('inc', 'bg_bebritish', 'bg_bebritish.pages');
     $form['#submit'][] = 'bg_bebritish_profile_form_submit';
   }
+}
+
+/**
+ * Redirection vers le front Beaugrenelle après soumission du formulaire d'édition.
+ * @see bg_bebritish_form_user_profile_form_alter()
+ * @TODO Page de confirmation BeBritish côté front ?
+ */
+function bg_bebritish_profile_form_submit($form, &$form_state) {
+  // Redirection vers Beaugrenelle
+  $form_state['redirect'] = 'http://www.beaugrenelle-paris.com/fr/landing-bbritish';
 }

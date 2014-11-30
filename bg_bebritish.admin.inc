@@ -1,87 +1,174 @@
 <?php
 /**
- * @file bg_bebritish.admin.inc
+ * @file bg_bebritish.pages.inc
  */
 
 /**
- * Landing page des inscrits BeBritish. Vérification du lien + édition du mot de passe.
+ * Formulaire d'importation de la table {mkt_bbritish_users}.
  * @see bg_bebritish_menu()
- * @see user_pass_reset()
  */
-function bg_bebritish_password_form($form, &$form_state, $uid, $timestamp, $hashed_pass, $action = NULL) {
-  global $user;
+function bg_bebritish_import_form($form, &$form_state) {
+  $form = array();
+  $form['help'] = array(
+    '#type' => 'item',
+    '#markup' => 'Import de la table <em>mkt_bbritish_users</em> :',
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Importer',
+    '#submit' => array('bg_bebritish_import_form_submit'),
+  );
+  return $form;
+}
 
-  // When processing the one-time login link, we have to make sure that a user
-  // isn't already logged in.
-  if ($user->uid) {
-    // The existing user is already logged in.
-    if ($user->uid == $uid) {
-      drupal_set_message(t('You are logged in as %user. <a href="!user_edit">Change your password.</a>', array('%user' => $user->name, '!user_edit' => url("user/$user->uid/edit"))));
-    }
-    // A different user is already logged in on the computer.
-    else {
-      $reset_link_account = user_load($uid);
-      if (!empty($reset_link_account)) {
-        drupal_set_message(t('Another user (%other_user) is already logged into the site on this computer, but you tried to use a one-time link for user %resetting_user. Please <a href="!logout">logout</a> and try using the link again.',
-        array('%other_user' => $user->name, '%resetting_user' => $reset_link_account->name, '!logout' => url('user/logout'))));
-      } else {
-        // Invalid one-time link specifies an unknown user.
-        drupal_set_message(t('The one-time login link you clicked is invalid.'));
-      }
-    }
-    drupal_goto();
-  }
-  else {
-    // Time out, in seconds, until login URL expires. Defaults to 24 hours =
-    // 86400 seconds.
-    $timeout = variable_get('user_password_reset_timeout', 86400);
-    $current = REQUEST_TIME;
-    // Some redundant checks for extra security ?
-    $users = user_load_multiple(array($uid));
-    if ($timestamp <= $current && $account = reset($users)) {
-      // Activation manuelle du compte utilisateur sinon le système bug, car la
-      // demande de nouveau mot de passe est interdite pour les comptes bloqués.
-      user_save($account, array('status' => '1'));
-
-      // No time out for first time login.
-      if ($account->login && $current - $timestamp > $timeout) {
-        drupal_set_message(t('You have tried to use a one-time login link that has expired. Please request a new one using the form below.'));
-        drupal_goto('user/password');
-      }
-      elseif ($account->uid && $timestamp >= $account->login && $timestamp <= $current && $hashed_pass == user_pass_rehash($account->pass, $timestamp, $account->login)) {
-        // First stage is a confirmation form, then login
-        if ($action == 'login') {
-          // Set the new user.
-          $user = $account;
-          // user_login_finalize() also updates the login timestamp of the
-          // user, which invalidates further use of the one-time login link.
-          user_login_finalize();
-          watchdog('user', 'User %name used one-time login link at time %timestamp.', array('%name' => $account->name, '%timestamp' => $timestamp));
-          drupal_set_message(t('You have just used your one-time login link. It is no longer necessary to use this link to log in. Please change your password.'));
-          // Let the user's password be changed without the current password check.
-          $token = drupal_random_key();
-          $_SESSION['pass_reset_' . $user->uid] = $token;
-          drupal_goto('user/' . $user->uid . '/edit', array('query' => array('pass-reset-token' => $token)));
+/**
+ * Importation de la table {mkt_bbritish_users}.
+ * @see bg_bebritish_import_form()
+ */
+function bg_bebritish_import_form_submit() {
+  set_time_limit(0);
+  $transaction = db_transaction();
+  try {
+    $query = db_select('mkt_bbritish_users', 'm')
+      ->fields('m', array('email', 'prenom', 'nom', 'cp', 'telephone'));
+    $results = $query->execute();
+    foreach ($results as $row) {
+      $account = user_load_by_mail($row->email);
+      // Uniquement si non inscrit
+      if (!$account) {
+        $name = strtolower(substr($row->prenom, 0, 1) . '.' . $row->nom);
+        $cpt = 0;
+        // On cherche un name unique
+        while (user_load_by_name($name)) {
+          $name = strtolower(substr($row->prenom, 0, 1) . '.' . $row->nom) . "_$cpt";
+          $cpt++;
+        }
+        // Informations à insérer
+        $edit = array(
+          'name' => $name,
+          'pass' => '',
+          'mail' => $row->email,
+          'created' => REQUEST_TIME,
+          'status' => 0,
+        );
+        // Insertion + mise à jour de la table {bg_customers}
+        if (user_save(NULL, $edit)) {
+          db_update('bg_customers')
+            ->fields(array(
+              'first_name' => $row->prenom,
+              'last_name' => $row->nom,
+              'zip_code' => $row->cp,
+              'phone_number' => $row->telephone,
+              'media_subscribe' => 'BeBritish-borne',
+            ))
+            ->condition('email', $row->email)
+            ->execute();
         }
         else {
-          $form['message'] = array('#markup' => t('<p>This is a one-time login for %user_name and will expire on %expiration_date.</p><p>Click on this button to log in to the site and change your password.</p>', array('%user_name' => $account->name, '%expiration_date' => format_date($timestamp + $timeout))));
-          $form['help'] = array('#markup' => '<p>' . t('This login can be used only once.') . '</p>');
-          $form['actions'] = array('#type' => 'actions');
-          $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Log in'));
-          $form['#action'] = url("bgl/bebritish/optin/$uid/$timestamp/$hashed_pass/login");
-          return $form;
+          drupal_set_message(format_string("Erreur à l'import de l'utilisateur %utilisateur.", array(
+            '%utilisateur' => $row->email
+          )));
         }
       }
-      else {
-        drupal_set_message(t('You have tried to use a one-time login link that has either been used or is no longer valid. Please request a new one using the form below.'));
-        drupal_goto('user/password');
-      }
     }
-    else {
-      // Deny access, no more clues.
-      // Everything will be in the watchdog's URL for the administrator to check.
-      drupal_access_denied();
-      drupal_exit();
+    drupal_set_message('Imports effectués.');
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception(__FUNCTION__, $e);
+    throw $e;
+  }
+}
+
+/**
+ * Formulaire d'e-mailing opt-in pour les membres BeBritish.
+ * @see bg_bebritish_menu()
+ */
+function bg_bebritish_emailing_form($form, $form_state) {
+  $form = array();
+  
+  // Liste paginée des inscrits BeBritish
+  $query = db_select('bg_customers', 'c')
+    ->fields('u', array('uid', 'name', 'pass', 'mail', 'login'))
+    ->fields('c', array('first_name', 'last_name'))
+    ->condition('c.is_newsletter_bgl', 0)
+    ->condition('c.media_subscribe', 'bebritish-%', 'NOT LIKE');
+  $query->join('users', 'u', 'u.uid = c.uid');
+  
+  $results = $query->execute();
+  $nb_membres = $results->rowCount();
+  $serialized_query = serialize($query);
+  
+  // Ajout de la pagination et de l'ordonnancement (affichage uniquement)
+  $query->orderBy('u.mail');
+  $query = $query->extend('PagerDefault')->limit(10);
+  $results_pager = $query->execute();
+  
+  $rows = array();
+  $page = isset($_GET['page']) ? (int) $_GET['page'] : 0;
+  $cpt = 1;
+  foreach ($results_pager as $row) {
+    $compteur = ($cpt + $page * 10) <= $nb_membres ? $cpt + $page * 10 : $cpt;
+    $rows[] = array($compteur, $row->mail, $row->first_name, $row->last_name, $row->name);
+    $cpt++;
+  }
+  // @see theme_table()
+  $form['destinataires'] = array(
+    '#type' => 'item',
+    '#title' => format_string('Liste d\'envoi (!nb_membres)', array('!nb_membres' => format_plural($nb_membres, '@count membre', '@count membres'))),
+    '#theme' => 'table',
+    '#header' => array('#', 'E-mail', 'Prénom', 'Nom', 'Nom d\'utilisateur'),
+    '#rows' => $rows,
+    '#suffix' => theme('pager', array('tags' => array())),
+  );
+  
+  $form['query'] = array(
+    '#type' => 'hidden',
+    '#value' => $serialized_query,
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'E-mailing',
+    '#submit' => array('bg_bebritish_emailing_form_submit'),
+  );
+  
+  return $form;
+}
+
+/**
+ * E-mailing opt-in pour les membres BeBritish.
+ * @see bg_bebritish_emailing_form()
+ * @see user_pass_reset_url()
+ * @see drupal_mail()
+ */
+function bg_bebritish_emailing_form_submit($form, &$form_state) {
+  set_time_limit(0);
+  $query = unserialize($form_state['values']['query']);
+  $results = $query->execute();
+  foreach ($results as $account) {
+    $module = 'bg_bebritish';
+    $key = 'optin-bebritish';
+    $to = $account->mail;
+    $language = language_default();
+    $timestamp = REQUEST_TIME;
+    $landing_page = url("bgl/bebritish/optin/$account->uid/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login), array('absolute' => TRUE));
+    $params = array(
+      'prenom' => $account->first_name,
+      'nom' => $account->last_name,
+      'landing_page' => $landing_page,
+    );
+    $from = NULL;
+    $send = TRUE;
+    /** Simulation d'envoi de l'email - Réactiver si nécessaire **/
+    /*--
+    $message = drupal_mail($module, $key, $to, $language, $params, $from, $send);
+    if (isset($message['result']) && $message['result']) {
+      drupal_set_message(format_string("E-mail '%sujet' envoyé avec succès à l'utilisateur %utilisateur.", array(
+        '%sujet' => $message['subject'],
+        '%utilisateur' => $account->name,
+      )));
     }
+    /**/
   }
 }
