@@ -85,8 +85,7 @@ function bg_bebritish_form_user_profile_form_alter(&$form, &$form_state, $form_i
   $user = $form_state['user'];
   if (isset($_GET['pass-reset-token']) && isset($_SESSION['pass_reset_' . $user->uid]) && ($_GET['pass-reset-token'] == $_SESSION['pass_reset_' . $user->uid])) {
     // On est dans le cas d'un choix de mot de passe pour compte BeBritish
-    // => mise à jour : is_newsletter_bgl = 1 + ajout d'une fonction de soumission custom
-    db_update('bg_customers')->fields(array('is_newsletter_bgl' => 1, 'created' => REQUEST_TIME))->condition('uid', $user->uid)->execute();
+    // => ajout d'une fonction de soumission custom
     module_load_include('inc', 'bg_bebritish', 'bg_bebritish.pages');
     $form['#submit'][] = 'bg_bebritish_profile_form_submit';
   }

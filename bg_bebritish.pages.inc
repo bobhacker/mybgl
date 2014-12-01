@@ -40,9 +40,14 @@ function bg_bebritish_password_form($form, &$form_state, $uid, $timestamp, $hash
     $users = user_load_multiple(array($uid));
     if ($timestamp <= $current && $account = reset($users)) {
       // Activation manuelle du compte utilisateur sinon le système bug, car la
-      // demande de nouveau mot de passe est interdite pour les comptes bloqués.
+      // demande de nouveau mot de passe est interdite pour les comptes bloqués
       user_save($account, array('status' => '1'));
-
+      // Au passage, mise à jour du is_newsletter_bgl à 1. Parce que
+      db_update('bg_customers')
+        ->fields(array('is_newsletter_bgl' => 1, 'created' => REQUEST_TIME))
+        ->condition('uid', $user->uid)
+        ->execute();
+      
       // No time out for first time login.
       if ($account->login && $current - $timestamp > $timeout) {
         drupal_set_message(t('You have tried to use a one-time login link that has expired. Please request a new one using the form below.'));
