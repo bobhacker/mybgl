@@ -1,0 +1,5 @@
+name = Currency
+description = Personal challenge!<br />See <a target="_blank" href="https://www.codeur.com/projects/27441-site-drupal-7-selection-de-la-devise">https://www.codeur.com/projects/27441-site-drupal-7-selection-de-la-devise</a> for details.
+core = 7.x
+package = Tuto D7
+version = 7.x-1.0

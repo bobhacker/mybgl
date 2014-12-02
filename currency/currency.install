@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file currency.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ * Supprime le cookie.
+ */
+function currency_uninstall() {
+  if (isset($_COOKIE['Drupal_visitor_currency'])) {
+    setrawcookie('Drupal.visitor.currency', '', REQUEST_TIME - 3600, '/');
+  }
+}

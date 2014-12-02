@@ -1,0 +1,108 @@
+<?php
+/**
+ * @file currency.module
+ */
+
+// Devise par défaut (EUR)
+define('CURRENCY_DEFAULT', 'EUR');
+
+/**
+ * Implements hook_permission().
+ */
+function currency_permission() {
+  return array(
+  'administer currency' => array(
+  'title' => t('Administer Currency'),
+  'description' => t('Perform administration tasks for Currency.'),
+  ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function currency_menu() {
+  $items = array();
+  $items['admin/currency'] = array(
+  'title' => 'Currency settings',
+  'page callback' => 'drupal_get_form',
+  'page arguments' => array('currency_settings_form'),
+  'access arguments' => array('administer currency'),
+  'weight' => -15,
+  'file' => 'currency.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_boot().
+ * Crée les variables globales $currency et $currency_allowed.
+ */
+function currency_boot() {
+  global $currency;
+
+  $currency_allowed = $currencies = variable_get('currency_allowed', array(CURRENCY_DEFAULT));
+  $currency = isset($_COOKIE['Drupal_visitor_currency']) && in_array($_COOKIE['Drupal_visitor_currency'], $currency_allowed) 
+    ? $_COOKIE['Drupal_visitor_currency'] 
+    : variable_get('currency_default', CURRENCY_DEFAULT);
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function currency_block_info() {
+  return array(
+    'currency_selection' => array(
+      'info' => t('Currency selection'),
+      'cache' => DRUPAL_NO_CACHE,
+    )
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ * Menu de sélection de la devise.
+ * @see currency_form()
+ */
+function currency_block_view($delta = '') {
+  switch ($delta) {
+    case 'currency_selection':
+      return array(
+        'subject' => t('Currency selection'),
+        'content' => render(drupal_get_form('currency_form')),
+      );
+      break;
+    default:
+      break;
+  }
+}
+
+/**
+ * Formulaire de sélection de la devise.
+ */
+function currency_form($form, &$form_state) {
+  global $currency;
+
+  $form = array();
+  $currencies = variable_get('currency_allowed', array(CURRENCY_DEFAULT));
+  $form['currency'] = array(
+    '#type' => 'select',
+    '#options' => array_combine($currencies, $currencies),
+    '#default_value' => $currency,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Select'),
+    '#submit' => array('currency_form_submit'),
+  );
+  return $form;
+}
+
+/**
+ * Soumission du formulaire de sélection de la devise.
+ */
+function currency_form_submit($form, &$form_state) {
+  $currency = $form_state['values']['currency'];
+  // Set cookie for 365 days.
+  setrawcookie('Drupal.visitor.currency', rawurlencode($currency), REQUEST_TIME + 31536000, '/');
+}

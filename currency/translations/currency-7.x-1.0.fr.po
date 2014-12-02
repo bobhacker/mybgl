@@ -1,0 +1,7 @@
+# Traduction française pour Currency (7.x-1.0)
+#
+msgid ""
+msgstr ""
+
+msgid "Personal challenge!<br />See <a target="_blank" href="https://www.codeur.com/projects/27441-site-drupal-7-selection-de-la-devise">https://www.codeur.com/projects/27441-site-drupal-7-selection-de-la-devise</a> for details."
+msgstr "Défi perso!<br />Voir <a target="_blank" href="https://www.codeur.com/projects/27441-site-drupal-7-selection-de-la-devise">https://www.codeur.com/projects/27441-site-drupal-7-selection-de-la-devise</a> pour la description."
