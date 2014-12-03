@@ -11,10 +11,10 @@ define('CURRENCY_DEFAULT', 'EUR');
  */
 function currency_permission() {
   return array(
-  'administer currency' => array(
-  'title' => t('Administer Currency'),
-  'description' => t('Perform administration tasks for Currency.'),
-  ),
+    'administer currency' => array(
+      'title' => t('Administer Currency'),
+      'description' => t('Perform administration tasks for Currency.'),
+    ),
   );
 }
 
@@ -24,19 +24,19 @@ function currency_permission() {
 function currency_menu() {
   $items = array();
   $items['admin/currency'] = array(
-  'title' => 'Currency settings',
-  'page callback' => 'drupal_get_form',
-  'page arguments' => array('currency_settings_form'),
-  'access arguments' => array('administer currency'),
-  'weight' => -15,
-  'file' => 'currency.admin.inc',
+    'title' => 'Currency settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('currency_settings_form'),
+    'access arguments' => array('administer currency'),
+    'weight' => -15,
+    'file' => 'currency.admin.inc',
   );
   return $items;
 }
 
 /**
  * Implements hook_boot().
- * Crée les variables globales $currency et $currency_allowed.
+ * Crée la variable globale $currency.
  */
 function currency_boot() {
   global $currency;

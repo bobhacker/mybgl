@@ -2,10 +2,7 @@
 /**
  * @file currency.admin.inc
  */
-// AED,AUD, CHF,CNY, EUR,GBP, HDK,NOK, RUB, SEK
 
-//variable_del('currency_allowed');
-//variable_del('currency_default');
 /**
  * Currency settings form.
  */
